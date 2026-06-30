@@ -269,31 +269,14 @@ print_summary() {
 main() {
   parse_args "$@"
 
-  # Bootstrap — if running from pipe, clone repo and re-exec
   local repo_root
   repo_root=$(bootstrap_repo)
-  local script_path="${repo_root}/scripts/install.sh"
 
-  # If we are the temporary clone, re-exec with all args preserved
-  if [ "$repo_root" != "$(cd "$(dirname "$0")/.." 2>/dev/null && pwd || echo "")" ]; then
-    # Re-exec from cloned repo, passing all collected args
-    exec bash "$script_path" \
-      ${SITE_NAME:+--site "$SITE_NAME"} \
-      ${DB_PASS:+--db-pass "$DB_PASS"} \
-      ${MQ_HOST:+--mq-host "$MQ_HOST"} \
-      ${MQ_USER:+--mq-user "$MQ_USER"} \
-      ${MQ_PASS:+--mq-pass "$MQ_PASS"} \
-      ${APP_PORT:+--app-port "$APP_PORT"} \
-      ${APP_SECRET:+--app-secret "$APP_SECRET"} \
-      ${GIT_REPO:+--git-repo "$GIT_REPO"} \
-      ${GIT_BRANCH:+--git-branch "$GIT_BRANCH"} \
-      $($SKIP_CODE_SERVER && echo "--skip-code-server") \
-      $($NON_INTERACTIVE && echo "--non-interactive")
-  fi
-
-  # From here: we are running from the cloned repo
-  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-  LIB_DIR="${SCRIPT_DIR}/lib"
+  source "${repo_root}/scripts/lib/common.sh"
+  source "${repo_root}/scripts/lib/phase-system.sh"
+  source "${repo_root}/scripts/lib/phase-postgres.sh"
+  source "${repo_root}/scripts/lib/phase-freeradius.sh"
+  source "${repo_root}/scripts/lib/phase-app.sh"
 
   echo
   echo "╔══════════════════════════════════════════════════════╗"
@@ -315,16 +298,9 @@ main() {
     prompt_all
   fi
 
-  source "${LIB_DIR}/phase-system.sh"
   phase_system_install; phase_system_verify
-
-  source "${LIB_DIR}/phase-postgres.sh"
   phase_postgres_setup "$DB_PASS"; phase_postgres_verify "$DB_PASS"
-
-  source "${LIB_DIR}/phase-freeradius.sh"
   phase_freeradius_setup "$DB_PASS" "$APP_PORT"; phase_freeradius_verify
-
-  source "${LIB_DIR}/phase-app.sh"
   phase_app_setup "$SITE_NAME" "$DB_PASS" "$MQ_HOST" "$MQ_USER" "$MQ_PASS" "$APP_PORT" "$APP_SECRET" "$GIT_REPO" "$GIT_BRANCH"
   phase_app_verify "$SITE_NAME" "$APP_PORT"
 
