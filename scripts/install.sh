@@ -98,13 +98,24 @@ prompt_all() {
 
 phase_system_install() {
   log_step "Phase 1: Installing System Packages"
-  sudo apt update -qq || log_fatal "apt update failed"
-  sudo apt install -y -qq postgresql postgresql-contrib libpq-dev 2>&1 | tail -1 || true
-  sudo apt install -y -qq freeradius freeradius-postgresql freeradius-rest 2>&1 | tail -1 || true
-  sudo apt install -y -qq snmp snmpd 2>&1 | tail -1 || true
-  if ! command -v node &>/dev/null; then curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - &>/dev/null; sudo apt install -y -qq nodejs 2>&1 | tail -1 || true; fi
-  if ! command -v pm2 &>/dev/null; then sudo npm install -g pm2 2>&1 | tail -1 || true; fi
-  if ! command -v git &>/dev/null; then sudo apt install -y -qq git 2>&1 | tail -1 || true; fi
+  echo "   Updating package lists (this may take a minute)..." >&2
+  sudo apt update || log_fatal "apt update failed"
+  echo "   Installing PostgreSQL..." >&2
+  sudo apt install -y postgresql postgresql-contrib libpq-dev || log_fatal "PostgreSQL install failed"
+  echo "   Installing FreeRADIUS with SQL and REST modules..." >&2
+  sudo apt install -y freeradius freeradius-postgresql freeradius-rest || log_fatal "FreeRADIUS install failed"
+  echo "   Installing SNMP..." >&2
+  sudo apt install -y snmp snmpd || true
+  if ! command -v node &>/dev/null; then
+    echo "   Installing Node.js 20.x..." >&2
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - &>/dev/null
+    sudo apt install -y nodejs || log_fatal "Node.js install failed"
+  fi
+  if ! command -v pm2 &>/dev/null; then
+    echo "   Installing PM2..." >&2
+    sudo npm install -g pm2 || true
+  fi
+  if ! command -v git &>/dev/null; then sudo apt install -y git || true; fi
   log_info "System packages installed"
 }
 
@@ -172,7 +183,7 @@ phase_app_setup() {
   if [ -d "${dir}/be-free-radius-system" ]; then
     cd "${dir}/be-free-radius-system"; git checkout "$gb" 2>/dev/null || true; git pull origin "$gb" 2>/dev/null || true
   else
-    cd "$dir"; GIT_TERMINAL_PROMPT=0 git clone --depth 1 --branch "$gb" "$gr" 2>&1 | tail -3 || log_fatal "git clone failed"
+    cd "$dir"; GIT_TERMINAL_PROMPT=0 git clone --depth 1 --branch "$gb" "$gr" || log_fatal "git clone failed"
     cd "${dir}/be-free-radius-system"
   fi
   log_info "Generating config.yaml..."
@@ -232,11 +243,11 @@ log:
   level: info
 CFGEOF
   log_info "config.yaml generated"
-  npm install 2>&1 | tail -1 || log_fatal "npm install failed"
-  npm run build 2>&1 | tail -1 || log_fatal "npm build failed"
+  npm install || log_fatal "npm install failed"
+  npm run build || log_fatal "npm build failed"
   pm2 install pm2-logrotate 2>/dev/null || true
-  if [ -f ecosystem.config.js ]; then pm2 delete ecosystem.config.js 2>/dev/null || true; pm2 start ecosystem.config.js --env production 2>&1 | tail -3
-  else pm2 delete be-free-radius-system 2>/dev/null || true; pm2 start dist/cmd/web/main.js --name be-free-radius-system 2>&1 | tail -3; fi
+  if [ -f ecosystem.config.js ]; then pm2 delete ecosystem.config.js 2>/dev/null || true; pm2 start ecosystem.config.js --env production
+  else pm2 delete be-free-radius-system 2>/dev/null || true; pm2 start dist/cmd/web/main.js --name be-free-radius-system; fi
   pm2 save 2>/dev/null || true; pm2 startup systemd -u "$(whoami)" --hp "${HOME}" 2>/dev/null | sudo bash 2>/dev/null || true
 }
 
@@ -267,7 +278,7 @@ setup_sudoers() {
 
 setup_code_server() {
   log_step "Installing code-server..."; command -v code-server &>/dev/null && { log_info "Already installed"; return; }
-  curl -fsSL https://code-server.dev/install.sh | sh -s -- --method=standalone 2>&1 | tail -1 || { log_warn "Failed"; return; }
+  curl -fsSL https://code-server.dev/install.sh | sh -s -- --method=standalone || { log_warn "Failed"; return; }
   local d="${HOME}/.config/code-server" p; p=$(generate_secret | head -c 16); mkdir -p "$d"
   printf 'bind-addr: 0.0.0.0:8080\nauth: password\npassword: %s\ncert: false\n' "$p" > "${d}/config.yaml"
   sudo systemctl enable --now code-server@$(whoami) 2>/dev/null || true; sleep 2
@@ -292,7 +303,14 @@ main() {
   echo; echo "╔══════════════════════════════════════════════════════╗"; echo "║   🚀 be-free-radius-lab Installer                      ║"; echo "╚══════════════════════════════════════════════════════╝"; echo
   check_command bash; check_command curl; check_command sudo; check_command openssl
   if [ ! -t 0 ] && [ "$NON_INTERACTIVE" = false ]; then
-    log_fatal "Interactive mode requires a terminal. Use --non-interactive with --site, --mq-host, --mq-pass"
+    log_fatal "Cannot prompt interactively because stdin is not a terminal.
+
+Use non-interactive mode with all required arguments:
+  curl ... | bash -s -- \\
+    --site SITE_NAME \\
+    --mq-host MQ_HOST \\
+    --mq-pass MQ_PASS \\
+    --non-interactive"
   fi
   if [ "$NON_INTERACTIVE" = true ]; then validate_non_interactive
   else
