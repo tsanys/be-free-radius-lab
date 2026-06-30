@@ -87,7 +87,9 @@ bootstrap_repo() {
 
   local tmp_dir
   tmp_dir=$(mktemp -d)
-  GIT_TERMINAL_PROMPT=0 git clone --depth 1 --branch "$DEFAULT_GIT_BRANCH" "$DEFAULT_GIT_REPO" "${tmp_dir}/be-free-radius-system" 2>&1 | tail -1 || log_fatal "Failed to clone repository. Make sure the repository is public and accessible."
+  GIT_TERMINAL_PROMPT=0 git clone --depth 1 --branch "$DEFAULT_GIT_BRANCH" "$DEFAULT_GIT_REPO" "${tmp_dir}/be-free-radius-system" || log_fatal "Failed to clone ${DEFAULT_GIT_REPO} (branch: ${DEFAULT_GIT_BRANCH}). Make sure the repository is public and accessible."
+
+  [ -f "${tmp_dir}/be-free-radius-system/scripts/install.sh" ] || log_fatal "Clone succeeded but scripts/install.sh not found. Check the repository structure."
 
   echo "${tmp_dir}/be-free-radius-system"
 }
