@@ -22,6 +22,9 @@ generate_secret() { openssl rand -hex 16 2>/dev/null || date +%s | md5sum 2>/dev
 service_running() { systemctl is-active --quiet "$1" 2>/dev/null; }
 run_as_postgres() { sudo -u postgres psql -tA -c "$1" 2>/dev/null || true; }
 
+export DEBIAN_FRONTEND=noninteractive
+sudo_ne() { sudo < /dev/null "$@"; }
+
 DEFAULT_DB_PASS="1CvjrzbcDuiCRLXzepzfGy55qVKdqmUbeM580wFLF8vp8"
 DEFAULT_MQ_USER="rapid"; DEFAULT_APP_PORT="8004"
 DEFAULT_GIT_REPO="https://github.com/tsanys/be-free-radius-lab.git"
@@ -99,23 +102,23 @@ prompt_all() {
 phase_system_install() {
   log_step "Phase 1: Installing System Packages"
   echo "   Updating package lists (this may take a minute)..." >&2
-  sudo apt update || log_fatal "apt update failed"
+  sudo_ne apt update || log_fatal "apt update failed"
   echo "   Installing PostgreSQL..." >&2
-  sudo apt install -y postgresql postgresql-contrib libpq-dev || log_fatal "PostgreSQL install failed"
+  sudo_ne apt install -y postgresql postgresql-contrib libpq-dev || log_fatal "PostgreSQL install failed"
   echo "   Installing FreeRADIUS with SQL and REST modules..." >&2
-  sudo apt install -y freeradius freeradius-postgresql freeradius-rest || log_fatal "FreeRADIUS install failed"
+  sudo_ne apt install -y freeradius freeradius-postgresql freeradius-rest || log_fatal "FreeRADIUS install failed"
   echo "   Installing SNMP..." >&2
-  sudo apt install -y snmp snmpd || true
+  sudo_ne apt install -y snmp snmpd || true
   if ! command -v node &>/dev/null; then
     echo "   Installing Node.js 20.x..." >&2
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - &>/dev/null
-    sudo apt install -y nodejs || log_fatal "Node.js install failed"
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo_ne bash - || log_fatal "NodeSource setup failed"
+    sudo_ne apt install -y nodejs || log_fatal "Node.js install failed"
   fi
   if ! command -v pm2 &>/dev/null; then
     echo "   Installing PM2..." >&2
-    sudo npm install -g pm2 || true
+    sudo_ne npm install -g pm2 || true
   fi
-  if ! command -v git &>/dev/null; then sudo apt install -y git || true; fi
+  if ! command -v git &>/dev/null; then sudo_ne apt install -y git || true; fi
   log_info "System packages installed"
 }
 
