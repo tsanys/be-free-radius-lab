@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  free-radius-api:
+    build:
+      context: .
+    image: be-free-radius-system
+    environment:
+      - NODE_ENV=staging
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 200m
+        reservations:
+          memory: 180m
+    labels:
+      - "traefik.enable=true"
+
+      - "traefik.http.middlewares.rate-limit.rateLimit.average=100"
+      - "traefik.http.middlewares.rate-limit.rateLimit.burst=50"
+
+      - "traefik.http.routers.free-radius-api.rule=Host(`localhost`)"
+      - "traefik.http.routers.free-radius-api.entryPoints=web,websecure"
+      - "traefik.http.routers.free-radius-api.middlewares=rate-limit"
+
+      - "traefik.http.services.free-radius-api.loadbalancer.server.port=8004"
+    command: "npm run start"
+    networks:
+      - rapidnet_web
+
+networks:
+  rapidnet_web:
+    external: true

@@ -1,0 +1,11 @@
+╔══════════════════════════════════════════════════════╗
+║   NOTE: This file is kept for reference only.       ║
+║   Use the automated installer instead:              ║
+║                                                     ║
+║   curl -fsSL https://raw.githubusercontent.com/     ║
+║     imamsantosa/be-free-radius-system/main/         ║
+║     scripts/install.sh | bash                       ║
+║                                                     ║
+║   Or from a cloned repo:                            ║
+║   bash scripts/install.sh                           ║
+╚══════════════════════════════════════════════════════╝

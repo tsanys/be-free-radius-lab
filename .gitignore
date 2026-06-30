@@ -1,0 +1,7 @@
+.idea
+dist
+logs
+node_modules
+.wwebjs_auth
+.wwebjs_cache
+config.yaml

@@ -1,0 +1,54 @@
+app:
+  mode: development
+  name: be-free-radius-system
+  host: 0.0.0.0
+  port: "8004"
+  prefix: sitename
+  secret: 8D8FyFt4d7uDY4gLuS522xVeaBGjJhRn
+database_radius:
+  schema: public
+  primary:
+    host: 127.0.0.1
+    port: "5432"
+    user: root
+    password: say1290
+    database: radius
+  slave:
+    host: 127.0.0.1
+    port: "5432"
+    user: root
+    password: say1290
+    database: radius
+database_rapid_radius:
+  schema: public
+  primary:
+    host: 127.0.0.1
+    port: "5432"
+    user: root
+    password: say1290
+    database: rapid_radius
+  slave:
+    host: 127.0.0.1
+    port: "5432"
+    user: root
+    password: say1290
+    database: rapid_radius
+rabbitmq:
+  # url: amqp://guest:guest@127.0.0.1:5672
+  url: amqp://admin:password@10.158.252.252:5672
+  max_retry: 3
+queue:
+  radius_nas: radius_nas_jakarta
+  radius_user: radius_user_jakarta
+  radius_user_status: radius_user
+  radius_group: radius_group
+  radius_connection: radius_connection
+  radius_nas_status: radius_nas_status
+  radius_server_status: radius_server_status
+  radius_user_log: radius_user_log
+  radius_cleanup: radius_cleanup
+cron:
+  nas_status: "*/5 * * * *"
+  server_status: "*/5 * * * *"
+log:
+  level: info
