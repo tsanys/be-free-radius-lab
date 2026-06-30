@@ -13,9 +13,9 @@ log_error() { printf "${RED}[ERROR]${NC} %s\n" "$*" >&2; }
 log_step()  { printf "\n${BLUE}==>${NC} ${CYAN}%s${NC}\n" "$*" >&2; }
 log_fatal() { log_error "$*"; exit 1; }
 
-prompt_input()   { local v=$1 m=$2 d=$3; read -rp "$(printf "${CYAN}?${NC} %s [${GREEN}%s${NC}]: " "$m" "$d")" v; v=${v:-$d}; eval "$1=\$v"; }
-prompt_secret()  { local v=$1 m=$2 d=$3; read -rsp "$(printf "${CYAN}?${NC} %s [${GREEN}****${NC}]: " "$m")" v; echo; v=${v:-$d}; eval "$1=\$v"; }
-prompt_confirm() { local m=$1 d=${2:-Y} y; read -rp "$(printf "${CYAN}?${NC} %s [${GREEN}%s${NC}]/%s: " "$m" "$d" "$([ "$d" = "Y" ] && echo "n" || echo "N")")" y; case "$y" in [Yy]*) return 0;; [Nn]*) return 1;; *) [ "$d" = "Y" ]; esac }
+prompt_input()   { local v=$1 m=$2 d=$3; read -rp "$(printf "${CYAN}?${NC} %s [${GREEN}%s${NC}]: " "$m" "$d")" v < /dev/tty; v=${v:-$d}; eval "$1=\$v"; }
+prompt_secret()  { local v=$1 m=$2 d=$3; read -rsp "$(printf "${CYAN}?${NC} %s [${GREEN}****${NC}]: " "$m")" v < /dev/tty; echo; v=${v:-$d}; eval "$1=\$v"; }
+prompt_confirm() { local m=$1 d=${2:-Y} y; read -rp "$(printf "${CYAN}?${NC} %s [${GREEN}%s${NC}]/%s: " "$m" "$d" "$([ "$d" = "Y" ] && echo "n" || echo "N")")" y < /dev/tty; case "$y" in [Yy]*) return 0;; [Nn]*) return 1;; *) [ "$d" = "Y" ]; esac }
 
 check_command()  { command -v "$1" &>/dev/null || log_fatal "'$1' is required but not installed."; }
 generate_secret() { openssl rand -hex 16 2>/dev/null || date +%s | md5sum 2>/dev/null | head -c 32; }
@@ -77,13 +77,13 @@ validate_non_interactive() {
 
 prompt_all() {
   echo; echo "╔══════════════════════════════════════════════════════╗"; echo "║   🚀 FreeRADIUS System - Interactive Installer      ║"; echo "╚══════════════════════════════════════════════════════╝"; echo
-  while [ -z "$SITE_NAME" ]; do read -rp "$(printf "${CYAN}?${NC} %s: " "Site name (e.g. wanasaribrebes)")" SITE_NAME; done
+  while [ -z "$SITE_NAME" ]; do read -rp "$(printf "${CYAN}?${NC} %s: " "Site name (e.g. wanasaribrebes)")" SITE_NAME < /dev/tty; done
   SITE_NAME=$(echo "$SITE_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
   prompt_input APP_PORT "Application port" "$DEFAULT_APP_PORT"
   prompt_secret DB_PASS "PostgreSQL password for user 'rapid'" "$DEFAULT_DB_PASS"
   [ -z "$APP_SECRET" ] && APP_SECRET=$(generate_secret)
   echo; echo "── RabbitMQ Configuration ──"
-  while [ -z "$MQ_HOST" ]; do read -rp "$(printf "${CYAN}?${NC} %s: " "RabbitMQ server host")" MQ_HOST; done
+  while [ -z "$MQ_HOST" ]; do read -rp "$(printf "${CYAN}?${NC} %s: " "RabbitMQ server host")" MQ_HOST < /dev/tty; done
   prompt_input MQ_USER "RabbitMQ username" "$DEFAULT_MQ_USER"
   while [ -z "$MQ_PASS" ]; do prompt_secret MQ_PASS "RabbitMQ password" ""; done
   echo; echo "── Git Configuration ──"
@@ -255,7 +255,7 @@ setup_ssh_key() {
   if [ ! -f "$f" ]; then
     log_info "Generating SSH key..."; mkdir -p "${HOME}/.ssh"
     ssh-keygen -t rsa -b 4096 -C "pandunorsyabani@gmail.com" -N "" -f "$f" 2>/dev/null
-    log_info "Add this key to GitHub:"; echo; cat "${f}.pub"; echo; read -rp "Press Enter after adding..."
+    log_info "Add this key to GitHub:"; echo; cat "${f}.pub"; echo; read -rp "Press Enter after adding..." < /dev/tty
   fi
 }
 
@@ -291,6 +291,9 @@ main() {
   parse_args "$@"
   echo; echo "╔══════════════════════════════════════════════════════╗"; echo "║   🚀 be-free-radius-lab Installer                      ║"; echo "╚══════════════════════════════════════════════════════╝"; echo
   check_command bash; check_command curl; check_command sudo; check_command openssl
+  if [ ! -t 0 ] && [ "$NON_INTERACTIVE" = false ]; then
+    log_fatal "Interactive mode requires a terminal. Use --non-interactive with --site, --mq-host, --mq-pass"
+  fi
   if [ "$NON_INTERACTIVE" = true ]; then validate_non_interactive
   else
     [ -z "$DB_PASS" ] && DB_PASS="$DEFAULT_DB_PASS"; [ -z "$MQ_USER" ] && MQ_USER="$DEFAULT_MQ_USER"
