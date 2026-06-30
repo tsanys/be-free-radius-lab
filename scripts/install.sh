@@ -3,7 +3,7 @@ set -euo pipefail
 
 # be-free-radius-lab  —  One-command interactive installer (self-contained)
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/tsanys/be-free-radius-lab/main/scripts/install.sh | bash
+#   bash <(curl -fsSL https://raw.githubusercontent.com/tsanys/be-free-radius-lab/main/scripts/install.sh)
 
 NC='\033[0m'; RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; CYAN='\033[0;36m'
 
@@ -64,7 +64,8 @@ Options:
   --help               Show this help message
 
 Examples:
-  curl -fsSL https://raw.githubusercontent.com/tsanys/be-free-radius-lab/main/scripts/install.sh | bash
+  bash <(curl -fsSL https://raw.githubusercontent.com/tsanys/be-free-radius-lab/main/scripts/install.sh)
+  bash <(curl -fsSL https://raw.githubusercontent.com/tsanys/be-free-radius-lab/main/scripts/install.sh) --site wanasaribrebes --mq-host 10.0.0.1 --mq-pass sekret --non-interactive
 HELP
         exit 0 ;;
       *) log_fatal "Unknown argument: $1";;
@@ -309,7 +310,7 @@ main() {
     log_fatal "Cannot prompt interactively because stdin is not a terminal.
 
 Use non-interactive mode with all required arguments:
-  curl ... | bash -s -- \\
+  bash <(curl -fsSL https://raw.githubusercontent.com/tsanys/be-free-radius-lab/main/scripts/install.sh) \\
     --site SITE_NAME \\
     --mq-host MQ_HOST \\
     --mq-pass MQ_PASS \\
