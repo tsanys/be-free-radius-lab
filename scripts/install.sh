@@ -150,7 +150,12 @@ phase_postgres_setup() {
     log_info "pg_hba.conf configured for local rapid user"
   fi
   sudo systemctl restart postgresql; sleep 3
-  local schema; schema=$(sudo find /etc/freeradius -name "schema.sql" -path "*/postgresql/*" 2>/dev/null | head -1)
+  local schema; schema=$(sudo find /etc/freeradius -name "schema.sql" -path "*/main/postgresql/*" 2>/dev/null | head -1)
+  if [ -z "$schema" ]; then
+    for p in /etc/freeradius/3.0 /etc/freeradius/3.2; do
+      [ -f "${p}/mods-config/sql/main/postgresql/schema.sql" ] && schema="${p}/mods-config/sql/main/postgresql/schema.sql" && break
+    done
+  fi
   if [ -n "$schema" ]; then
     PGPASSWORD="${db_pass}" psql -w -h 127.0.0.1 -U "${db_user}" -d radius -f "$schema" && log_info "FreeRADIUS schema imported" || log_error "Schema import failed. Try: PGPASSWORD='${db_pass}' psql -h 127.0.0.1 -U ${db_user} -d radius -f ${schema}"
   else
@@ -312,6 +317,12 @@ main() {
   parse_args "$@"
   echo; echo "╔══════════════════════════════════════════════════════╗"; echo "║   🚀 be-free-radius-lab Installer                      ║"; echo "╚══════════════════════════════════════════════════════╝"; echo
   check_command bash; check_command curl; check_command sudo; check_command openssl
+  [ -z "$DB_PASS" ] && DB_PASS="$DEFAULT_DB_PASS"
+  [ -z "$MQ_USER" ] && MQ_USER="$DEFAULT_MQ_USER"
+  [ -z "$APP_PORT" ] && APP_PORT="$DEFAULT_APP_PORT"
+  [ -z "$GIT_REPO" ] && GIT_REPO="$DEFAULT_GIT_REPO"
+  [ -z "$GIT_BRANCH" ] && GIT_BRANCH="$DEFAULT_GIT_BRANCH"
+  [ -z "$APP_SECRET" ] && APP_SECRET=$(generate_secret)
   if [ ! -t 0 ] && [ "$NON_INTERACTIVE" = false ]; then
     log_fatal "Cannot prompt interactively because stdin is not a terminal.
 
@@ -323,14 +334,13 @@ Use non-interactive mode with all required arguments:
     --non-interactive"
   fi
   if [ "$NON_INTERACTIVE" = true ]; then validate_non_interactive
-  else
-    [ -z "$DB_PASS" ] && DB_PASS="$DEFAULT_DB_PASS"; [ -z "$MQ_USER" ] && MQ_USER="$DEFAULT_MQ_USER"
-    [ -z "$APP_PORT" ] && APP_PORT="$DEFAULT_APP_PORT"; [ -z "$GIT_REPO" ] && GIT_REPO="$DEFAULT_GIT_REPO"
-    [ -z "$GIT_BRANCH" ] && GIT_BRANCH="$DEFAULT_GIT_BRANCH"; [ -z "$APP_SECRET" ] && APP_SECRET=$(generate_secret)
-    prompt_all
-  fi
+  else prompt_all; fi
   phase_system_install; phase_system_verify
-  phase_postgres_setup "$DB_PASS"; phase_postgres_verify "$DB_PASS"
+  if [ -n "$DB_PASS" ]; then
+    phase_postgres_setup "$DB_PASS"; phase_postgres_verify "$DB_PASS"
+  else
+    log_error "DB_PASS is empty, skipping PostgreSQL setup"
+  fi
   phase_freeradius_setup "$DB_PASS" "$APP_PORT"; phase_freeradius_verify
   phase_app_setup "$SITE_NAME" "$DB_PASS" "$MQ_HOST" "$MQ_USER" "$MQ_PASS" "$APP_PORT" "$APP_SECRET" "$GIT_REPO" "$GIT_BRANCH"
   phase_app_verify "$SITE_NAME" "$APP_PORT"
