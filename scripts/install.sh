@@ -157,7 +157,7 @@ phase_postgres_setup() {
     done
   fi
   if [ -n "$schema" ]; then
-    PGPASSWORD="${db_pass}" psql -w -h 127.0.0.1 -U "${db_user}" -d radius -f "$schema" && log_info "FreeRADIUS schema imported" || log_error "Schema import failed. Try: PGPASSWORD='${db_pass}' psql -h 127.0.0.1 -U ${db_user} -d radius -f ${schema}"
+    sudo cat "$schema" | PGPASSWORD="${db_pass}" psql -w -h 127.0.0.1 -U "${db_user}" -d radius && log_info "FreeRADIUS schema imported" || log_error "Schema import failed. Try: PGPASSWORD='${db_pass}' psql -h 127.0.0.1 -U ${db_user} -d radius -f ${schema}"
   else
     log_warn "FreeRADIUS schema not found. Import manually."
   fi
