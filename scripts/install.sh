@@ -5,7 +5,7 @@ set -euo pipefail
 #  be-free-radius-system  —  One-command interactive installer
 #
 #  Usage (from a fresh server):
-#    curl -fsSL https://raw.githubusercontent.com/imamsantosa/be-free-radius-system/main/scripts/install.sh | bash
+#    curl -fsSL https://raw.githubusercontent.com/tsanys/be-free-radius-lab/main/scripts/install.sh | bash
 #
 #  Or with arguments (non-interactive):
 #    bash scripts/install.sh \
@@ -56,7 +56,7 @@ service_running() { systemctl is-active --quiet "$1" 2>/dev/null; }
 DEFAULT_DB_PASS="1CvjrzbcDuiCRLXzepzfGy55qVKdqmUbeM580wFLF8vp8"
 DEFAULT_MQ_USER="rapid"
 DEFAULT_APP_PORT="8004"
-DEFAULT_GIT_REPO="https://github.com/imamsantosa/be-free-radius-system.git"
+DEFAULT_GIT_REPO="https://github.com/tsanys/be-free-radius-lab.git"
 DEFAULT_GIT_BRANCH="main"
 
 SITE_NAME=""; DB_PASS=""; MQ_HOST=""; MQ_USER=""; MQ_PASS=""
@@ -121,14 +121,14 @@ Options:
   --mq-pass PASS       RabbitMQ password                      [required]
   --app-port PORT      Node.js app port                       [default: 8004]
   --app-secret SECRET  App secret key                         [auto-generated]
-  --git-repo URL       Git repository URL                     [default: imamsantosa/be-free-radius-system]
+  --git-repo URL       Git repository URL                     [default: tsanys/be-free-radius-lab]
   --git-branch BRANCH  Git branch                             [default: main]
   --skip-code-server   Skip code-server installation
   --non-interactive    Run without prompts (all vars must be provided)
   --help               Show this help message
 
 Examples:
-  curl -fsSL https://raw.githubusercontent.com/imamsantosa/be-free-radius-system/main/scripts/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/tsanys/be-free-radius-lab/main/scripts/install.sh | bash
   bash install.sh --site wanasaribrebes --mq-host 10.0.0.1 --mq-pass sekret
 EOF
        exit 0 ;;
@@ -195,7 +195,7 @@ setup_ssh_key() {
   if [ ! -f "$key_file" ]; then
     log_info "Generating SSH key for GitHub access..."
     mkdir -p "${HOME}/.ssh"
-    ssh-keygen -t rsa -b 4096 -C "imamsantosa123@gmail.com" -N "" -f "$key_file" 2>/dev/null
+    ssh-keygen -t rsa -b 4096 -C "pandunorsyabani@gmail.com" -N "" -f "$key_file" 2>/dev/null
     log_info "SSH key generated. Add this public key to GitHub:"
     echo; cat "${key_file}.pub"; echo
     read -rp "Press Enter after adding the SSH key to GitHub (https://github.com/settings/keys)..."

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-FREERADIUS_PATH="/etc/freeradius/3.0"
+FREERADIUS_PATH=$(sudo find /etc/freeradius -maxdepth 1 -type d -name "3.*" 2>/dev/null | head -1 || echo "/etc/freeradius/3.0")
 
 phase_freeradius_setup() {
   local db_pass=$1
