@@ -180,7 +180,7 @@ phase_freeradius_setup() {
   sudo chmod 640 "${fr}/mods-available/sql" "${fr}/mods-available/rest"
   log_info "SQL + REST modules enabled"
   sudo systemctl enable freeradius 2>/dev/null || true
-  sudo systemctl start freeradius 2>/dev/null; sleep 2
+  sudo systemctl start freeradius 2>/dev/null || true; sleep 2
   service_running freeradius && log_info "FreeRADIUS running" || log_warn "FreeRADIUS may have failed"
 }
 
