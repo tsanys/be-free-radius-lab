@@ -3,7 +3,7 @@ set -euo pipefail
 
 # be-free-radius-lab  —  One-command interactive installer (self-contained)
 # Usage:
-#   bash <(curl -fsSL https://raw.githubusercontent.com/tsanys/be-free-radius-lab/main/scripts/install.sh)
+#   curl -fsSL https://freerad.tsany.my.id/install.sh | bash
 
 NC='\033[0m'; RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; CYAN='\033[0;36m'
 
@@ -13,9 +13,9 @@ log_error() { printf "${RED}[ERROR]${NC} %s\n" "$*" >&2; }
 log_step()  { printf "\n${BLUE}==>${NC} ${CYAN}%s${NC}\n" "$*" >&2; }
 log_fatal() { log_error "$*"; exit 1; }
 
-prompt_input()   { local v=$1 m=$2 d=$3; read -rp "$(printf "${CYAN}?${NC} %s [${GREEN}%s${NC}]: " "$m" "$d")" v < /dev/tty; v=${v:-$d}; eval "$1=\$v"; }
-prompt_secret()  { local v=$1 m=$2 d=$3; read -rsp "$(printf "${CYAN}?${NC} %s [${GREEN}****${NC}]: " "$m")" v < /dev/tty; echo; v=${v:-$d}; eval "$1=\$v"; }
-prompt_confirm() { local m=$1 d=${2:-Y} y; read -rp "$(printf "${CYAN}?${NC} %s [${GREEN}%s${NC}]/%s: " "$m" "$d" "$([ "$d" = "Y" ] && echo "n" || echo "N")")" y < /dev/tty; case "$y" in [Yy]*) return 0;; [Nn]*) return 1;; *) [ "$d" = "Y" ]; esac }
+prompt_input()   { local v=$1 m=$2 d=$3; read -rp "$(printf "${CYAN}?${NC} %s [${GREEN}%s${NC}]: " "$m" "$d")" v <&2; v=${v:-$d}; eval "$1=\$v"; }
+prompt_secret()  { local v=$1 m=$2 d=$3; read -rsp "$(printf "${CYAN}?${NC} %s [${GREEN}****${NC}]: " "$m")" v <&2; echo; v=${v:-$d}; eval "$1=\$v"; }
+prompt_confirm() { local m=$1 d=${2:-Y} y; read -rp "$(printf "${CYAN}?${NC} %s [${GREEN}%s${NC}]/%s: " "$m" "$d" "$([ "$d" = "Y" ] && echo "n" || echo "N")")" y <&2; case "$y" in [Yy]*) return 0;; [Nn]*) return 1;; *) [ "$d" = "Y" ]; esac }
 
 check_command()  { command -v "$1" &>/dev/null || log_fatal "'$1' is required but not installed."; }
 generate_secret() { openssl rand -hex 16 2>/dev/null || date +%s | md5sum 2>/dev/null | head -c 32; }
@@ -64,8 +64,8 @@ Options:
   --help               Show this help message
 
 Examples:
-  bash <(curl -fsSL https://raw.githubusercontent.com/tsanys/be-free-radius-lab/main/scripts/install.sh)
-  bash <(curl -fsSL https://raw.githubusercontent.com/tsanys/be-free-radius-lab/main/scripts/install.sh) --site wanasaribrebes --mq-host 10.0.0.1 --mq-pass sekret --non-interactive
+  curl -fsSL https://freerad.tsany.my.id/install.sh | bash
+  curl -fsSL https://freerad.tsany.my.id/install.sh | bash -s -- --site wanasaribrebes --mq-host 10.0.0.1 --mq-pass sekret --non-interactive
 HELP
         exit 0 ;;
       *) log_fatal "Unknown argument: $1";;
@@ -76,19 +76,22 @@ HELP
 validate_non_interactive() {
   local missing=()
   [ -z "$SITE_NAME" ] && missing+=("--site"); [ -z "$MQ_HOST" ] && missing+=("--mq-host"); [ -z "$MQ_PASS" ] && missing+=("--mq-pass")
-  [ ${#missing[@]} -gt 0 ] && log_fatal "Non-interactive mode requires: ${missing[*]}"
+  [ ${#missing[@]} -gt 0 ] && log_fatal "Non-interactive mode requires: ${missing[*]}
+
+Usage: curl -fsSL https://freerad.tsany.my.id/install.sh | bash -s -- \\
+    --site SITE_NAME --mq-host MQ_HOST --mq-pass MQ_PASS --non-interactive"
   return 0
 }
 
 prompt_all() {
   echo; echo "╔══════════════════════════════════════════════════════╗"; echo "║   🚀 FreeRADIUS System - Interactive Installer      ║"; echo "╚══════════════════════════════════════════════════════╝"; echo
-  while [ -z "$SITE_NAME" ]; do read -rp "$(printf "${CYAN}?${NC} %s: " "Site name (e.g. wanasaribrebes)")" SITE_NAME < /dev/tty; done
+  while [ -z "$SITE_NAME" ]; do read -rp "$(printf "${CYAN}?${NC} %s: " "Site name (e.g. wanasaribrebes)")" SITE_NAME <&2; done
   SITE_NAME=$(echo "$SITE_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
   prompt_input APP_PORT "Application port" "$DEFAULT_APP_PORT"
   prompt_secret DB_PASS "PostgreSQL password for user 'rapid'" "$DEFAULT_DB_PASS"
   [ -z "$APP_SECRET" ] && APP_SECRET=$(generate_secret)
   echo; echo "── RabbitMQ Configuration ──"
-  while [ -z "$MQ_HOST" ]; do read -rp "$(printf "${CYAN}?${NC} %s: " "RabbitMQ server host")" MQ_HOST < /dev/tty; done
+  while [ -z "$MQ_HOST" ]; do read -rp "$(printf "${CYAN}?${NC} %s: " "RabbitMQ server host")" MQ_HOST <&2; done
   prompt_input MQ_USER "RabbitMQ username" "$DEFAULT_MQ_USER"
   while [ -z "$MQ_PASS" ]; do prompt_secret MQ_PASS "RabbitMQ password" ""; done
   echo; echo "── Git Configuration ──"
@@ -281,7 +284,7 @@ setup_ssh_key() {
   if [ ! -f "$f" ]; then
     log_info "Generating SSH key..."; mkdir -p "${HOME}/.ssh"
     ssh-keygen -t rsa -b 4096 -C "pandunorsyabani@gmail.com" -N "" -f "$f" 2>/dev/null
-    log_info "Add this key to GitHub:"; echo; cat "${f}.pub"; echo; read -rp "Press Enter after adding..." < /dev/tty
+    log_info "Add this key to GitHub:"; echo; cat "${f}.pub"; echo; read -rp "Press Enter after adding..." <&2
   fi
 }
 
@@ -324,14 +327,7 @@ main() {
   [ -z "$GIT_BRANCH" ] && GIT_BRANCH="$DEFAULT_GIT_BRANCH"
   [ -z "$APP_SECRET" ] && APP_SECRET=$(generate_secret)
   if [ ! -t 0 ] && [ "$NON_INTERACTIVE" = false ]; then
-    log_fatal "Cannot prompt interactively because stdin is not a terminal.
-
-Use non-interactive mode with all required arguments:
-  bash <(curl -fsSL https://raw.githubusercontent.com/tsanys/be-free-radius-lab/main/scripts/install.sh) \\
-    --site SITE_NAME \\
-    --mq-host MQ_HOST \\
-    --mq-pass MQ_PASS \\
-    --non-interactive"
+    log_warn "stdin is piped — reading input from your terminal (fd 2). Use --non-interactive to skip prompts."
   fi
   if [ "$NON_INTERACTIVE" = true ]; then validate_non_interactive
   else prompt_all; fi
