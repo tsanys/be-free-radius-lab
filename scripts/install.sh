@@ -77,6 +77,7 @@ validate_non_interactive() {
   local missing=()
   [ -z "$SITE_NAME" ] && missing+=("--site"); [ -z "$MQ_HOST" ] && missing+=("--mq-host"); [ -z "$MQ_PASS" ] && missing+=("--mq-pass")
   [ ${#missing[@]} -gt 0 ] && log_fatal "Non-interactive mode requires: ${missing[*]}"
+  return 0
 }
 
 prompt_all() {
