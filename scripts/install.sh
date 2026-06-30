@@ -198,7 +198,7 @@ phase_app_setup() {
   if [ -d "${dir}/be-free-radius-system" ]; then
     cd "${dir}/be-free-radius-system"; git checkout "$gb" 2>/dev/null || true; git pull origin "$gb" 2>/dev/null || true
   else
-    cd "$dir"; GIT_TERMINAL_PROMPT=0 git clone --depth 1 --branch "$gb" "$gr" || log_fatal "git clone failed"
+    cd "$dir"; GIT_TERMINAL_PROMPT=0 git clone --depth 1 --branch "$gb" "$gr" "${dir}/be-free-radius-system" || log_fatal "git clone failed"
     cd "${dir}/be-free-radius-system"
   fi
   log_info "Generating config.yaml..."
