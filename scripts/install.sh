@@ -145,16 +145,21 @@ phase_postgres_setup() {
   done
   local pg_hba; pg_hba=$(sudo -u postgres psql -tA -c "SHOW hba_file;" 2>/dev/null | tr -d ' ')
   if [ -n "$pg_hba" ]; then
-    printf 'local all postgres peer\nhost radius rapid 127.0.0.1/32 md5\nhost radius rapid ::1/128 md5\nhost all all 0.0.0.0/0 md5\nhost all all ::/0 md5\nlocal all all peer\n' | sudo tee "$pg_hba" >/dev/null
-    log_info "pg_hba.conf configured"
+    echo "host    radius          rapid           127.0.0.1/32            scram-sha-256" | sudo tee -a "$pg_hba" >/dev/null
+    echo "host    radius          rapid           ::1/128                 scram-sha-256" | sudo tee -a "$pg_hba" >/dev/null
+    log_info "pg_hba.conf configured for local rapid user"
   fi
-  sudo systemctl restart postgresql; sleep 2
+  sudo systemctl restart postgresql; sleep 3
   local schema; schema=$(sudo find /etc/freeradius -name "schema.sql" -path "*/postgresql/*" 2>/dev/null | head -1)
-  if [ -n "$schema" ]; then PGPASSWORD="${db_pass}" psql -h 127.0.0.1 -U "${db_user}" -d radius -f "$schema" &>/dev/null; log_info "FreeRADIUS schema imported"; else log_warn "Schema not found, import manually"; fi
+  if [ -n "$schema" ]; then
+    PGPASSWORD="${db_pass}" psql -w -h 127.0.0.1 -U "${db_user}" -d radius -f "$schema" && log_info "FreeRADIUS schema imported" || log_error "Schema import failed. Try: PGPASSWORD='${db_pass}' psql -h 127.0.0.1 -U ${db_user} -d radius -f ${schema}"
+  else
+    log_warn "FreeRADIUS schema not found. Import manually."
+  fi
 }
 
 phase_postgres_verify() {
-  PGPASSWORD="$1" psql -h 127.0.0.1 -U rapid -d radius -c "SELECT 1;" &>/dev/null && log_info "PostgreSQL OK" || log_error "PostgreSQL FAILED"
+  PGPASSWORD="$1" psql -w -h 127.0.0.1 -U rapid -d radius -c "SELECT 1;" &>/dev/null && log_info "PostgreSQL OK" || log_error "PostgreSQL connection FAILED"
 }
 
 phase_freeradius_setup() {
