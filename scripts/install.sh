@@ -113,7 +113,7 @@ phase_system_install() {
   sudo_ne apt install -y snmp snmpd || true
   if ! command -v node &>/dev/null; then
     echo "   Installing Node.js 20.x..." >&2
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo_ne bash - || log_fatal "NodeSource setup failed"
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash - || log_fatal "NodeSource setup failed"
     sudo_ne apt install -y nodejs || log_fatal "Node.js install failed"
   fi
   if ! command -v pm2 &>/dev/null; then
