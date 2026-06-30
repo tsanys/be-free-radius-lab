@@ -87,7 +87,7 @@ bootstrap_repo() {
 
   local tmp_dir
   tmp_dir=$(mktemp -d)
-  git clone --depth 1 --branch "$DEFAULT_GIT_BRANCH" "$DEFAULT_GIT_REPO" "${tmp_dir}/be-free-radius-system" 2>&1 | tail -1 || log_fatal "Failed to clone repository"
+  GIT_TERMINAL_PROMPT=0 git clone --depth 1 --branch "$DEFAULT_GIT_BRANCH" "$DEFAULT_GIT_REPO" "${tmp_dir}/be-free-radius-system" 2>&1 | tail -1 || log_fatal "Failed to clone repository. Make sure the repository is public and accessible."
 
   echo "${tmp_dir}/be-free-radius-system"
 }
