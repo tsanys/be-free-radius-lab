@@ -7,10 +7,10 @@ export YELLOW='\033[1;33m'
 export BLUE='\033[0;34m'
 export CYAN='\033[0;36m'
 
-log_info()  { printf "${GREEN}[INFO]${NC}  %s\n" "$*"; }
-log_warn()  { printf "${YELLOW}[WARN]${NC}  %s\n" "$*"; }
-log_error() { printf "${RED}[ERROR]${NC} %s\n" "$*"; }
-log_step()  { printf "\n${BLUE}==>${NC} ${CYAN}%s${NC}\n" "$*"; }
+log_info()  { printf "${GREEN}[INFO]${NC}  %s\n" "$*" >&2; }
+log_warn()  { printf "${YELLOW}[WARN]${NC}  %s\n" "$*" >&2; }
+log_error() { printf "${RED}[ERROR]${NC} %s\n" "$*" >&2; }
+log_step()  { printf "\n${BLUE}==>${NC} ${CYAN}%s${NC}\n" "$*" >&2; }
 log_fatal() { log_error "$*"; exit 1; }
 
 spinner() {
